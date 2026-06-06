@@ -7,6 +7,7 @@ type ViewMode = 'overview' | 'risks' | 'release'
 
 let selectedRepo = repositories[0]
 let mode: ViewMode = 'overview'
+let searchQuery = ''
 
 const app = document.querySelector<HTMLDivElement>('#app')
 
@@ -19,7 +20,12 @@ const root = app
 function render() {
   const board = summarizeBoard(repositories)
   const selectedScore = scoreRepository(selectedRepo)
-  const visibleWork = workForMode(selectedRepo.work, mode)
+  const filteredRepositories = repositories.filter((repo) =>
+    matchesSearch(`${repo.owner} ${repo.name} ${repo.description}`, searchQuery),
+  )
+  const visibleWork = workForMode(selectedRepo.work, mode).filter((item) =>
+    matchesSearch(`${item.id} ${item.title} ${item.label} ${item.type}`, searchQuery),
+  )
 
   root.innerHTML = `
     <main class="shell">
@@ -39,22 +45,31 @@ function render() {
           ${metric('At risk', board.risk)}
         </section>
 
+        <label class="search-box">
+          <span>Search repos and work</span>
+          <input data-search type="search" value="${escapeAttribute(searchQuery)}" placeholder="security, release, parser..." />
+        </label>
+
         <div class="repo-list">
-          ${repositories
-            .map((repo) => {
-              const score = scoreRepository(repo)
-              const active = repo.name === selectedRepo.name ? 'is-active' : ''
-              return `
-                <button class="repo-row ${active}" data-repo="${repo.name}" type="button">
-                  <span>
-                    <strong>${repo.owner}/${repo.name}</strong>
-                    <small>${repo.openIssues} issues · ${repo.openPullRequests} PRs</small>
-                  </span>
-                  <b class="score score-${score.level}">${score.total}</b>
-                </button>
-              `
-            })
-            .join('')}
+          ${
+            filteredRepositories.length === 0
+              ? '<p class="empty-state">No repositories match this search.</p>'
+              : filteredRepositories
+                  .map((repo) => {
+                    const score = scoreRepository(repo)
+                    const active = repo.name === selectedRepo.name ? 'is-active' : ''
+                    return `
+                      <button class="repo-row ${active}" data-repo="${repo.name}" type="button">
+                        <span>
+                          <strong>${repo.owner}/${repo.name}</strong>
+                          <small>${repo.openIssues} issues - ${repo.openPullRequests} PRs</small>
+                        </span>
+                        <b class="score score-${score.level}">${score.total}</b>
+                      </button>
+                    `
+                  })
+                  .join('')
+          }
         </div>
       </aside>
 
@@ -94,7 +109,11 @@ function render() {
               <span>${visibleWork.length} item(s)</span>
             </div>
             <div class="work-list">
-              ${visibleWork.map(workItem).join('')}
+              ${
+                visibleWork.length === 0
+                  ? '<p class="empty-state light">No work items match this view.</p>'
+                  : visibleWork.map(workItem).join('')
+              }
             </div>
           </div>
 
@@ -146,6 +165,11 @@ function bindEvents() {
     })
   })
 
+  root.querySelector<HTMLInputElement>('[data-search]')?.addEventListener('input', (event) => {
+    searchQuery = (event.currentTarget as HTMLInputElement).value
+    render()
+  })
+
   root.querySelector<HTMLButtonElement>('[data-action="export"]')?.addEventListener('click', () => {
     const payload = {
       repository: selectedRepo,
@@ -186,6 +210,16 @@ function workForMode(work: WorkItem[], currentMode: ViewMode) {
   return work
 }
 
+function matchesSearch(value: string, query: string) {
+  const normalizedQuery = query.trim().toLowerCase()
+  if (normalizedQuery === '') return true
+  return value.toLowerCase().includes(normalizedQuery)
+}
+
+function escapeAttribute(value: string) {
+  return value.replaceAll('&', '&amp;').replaceAll('"', '&quot;')
+}
+
 function panelTitle(currentMode: ViewMode) {
   if (currentMode === 'risks') return 'Risk queue'
   if (currentMode === 'release') return 'Release room'
@@ -198,7 +232,7 @@ function workItem(item: WorkItem) {
       <div>
         <span class="badge badge-${item.severity}">${item.label}</span>
         <h4>${item.title}</h4>
-        <p>${item.id} · ${item.ageDays} day(s) open · ${item.type}</p>
+        <p>${item.id} - ${item.ageDays} day(s) open - ${item.type}</p>
       </div>
       <span class="level-dot level-${item.severity}" aria-label="${item.severity}"></span>
     </article>

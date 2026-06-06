@@ -118,6 +118,34 @@ button {
   gap: 10px;
 }
 
+.search-box {
+  display: grid;
+  gap: 8px;
+}
+
+.search-box span {
+  color: #a7b7ba;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.search-box input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #f7fbfa;
+  background: rgba(255, 255, 255, 0.06);
+  outline: none;
+}
+
+.search-box input:focus {
+  border-color: rgba(94, 234, 212, 0.8);
+  box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.14);
+}
+
 .repo-row {
   width: 100%;
   min-height: 74px;
@@ -413,6 +441,21 @@ button {
   padding: 10px 12px;
   background: #fff7ed;
   border-radius: 0 8px 8px 0;
+}
+
+.empty-state {
+  margin: 0;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 14px;
+  color: #a7b7ba;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.empty-state.light {
+  border-color: var(--line);
+  color: var(--muted);
+  background: var(--panel-strong);
 }
 
 .release-stack {
